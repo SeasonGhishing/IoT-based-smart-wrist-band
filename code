@@ -1,0 +1,68 @@
+#include <Servo.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+
+const int trigPin = 9; // trig pin of the ultrasonic sensor
+const int echoPin = 8; // echo pin of the ultrasonic sensor
+const int servoPin = 10; // control pin of the servo motor
+const int buzzerPin = 11; // control pin of the piezo buzzer
+
+// Set up I2C LCD
+LiquidCrystal_I2C lcd(0X3F, 16, 2);
+
+// Set up GPS
+TinyGPSPlus gps;
+const int gpsRxPin = 3;
+const int gpsTxPin = 2;
+
+SoftwareSerial SIM800A(3, 2); // RX, TX of sim.
+Servo servo; // create a servo object
+
+void setup() {
+  lcd.init();
+  SIM800A.begin(9600);
+  delay(1000);
+  SIM800A.println("AT+CFUN=1"); // set full functionality
+  SIM800A.println("ATD+9779804004527;"); // replace with the phone number you want to call
+  delay(2000);
+  lcd.print("Calling...");
+  delay(5000);
+  lcd.clear();
+
+  servo.attach(servoPin); // attach the servo to the servo pin
+  Serial.begin(9600);
+  // Initialize I2C LCD
+  // lcd.backlight();
+  delay(1000);
+  
+  
+
+  // Initialize GPS
+  // Serial1.begin(9600);
+  pinMode(trigPin, OUTPUT); // set the trig pin as an output
+  pinMode(echoPin, INPUT); // set the echo pin as an input
+  pinMode(buzzerPin, OUTPUT); // set the buzzer pin as an output
+}
+
+void loop() {
+  long duration, distance;
+  digitalWrite(trigPin, LOW); // set the trig pin low
+  delayMicroseconds(2); // delay for 2 microseconds
+  digitalWrite(trigPin, HIGH); // set the trig pin high
+  delayMicroseconds(10); // delay for 10 microseconds
+  digitalWrite(trigPin, LOW); // set the trig pin low again
+  duration = pulseIn(echoPin, HIGH); // measure the time it takes for the echo pin to go high
+  distance = (duration / 2) / 29.1; // calculate the distance based on the time it took
+  servo.write(distance); // move the servo to the calculated distance
+  Serial.println(distance);
+
+  if (distance < 70) { // if the distance is less than 10 cm
+    digitalWrite(buzzerPin, HIGH); // turn on the buzzer
+  } else {
+    digitalWrite(buzzerPin, LOW); // turn off the buzzer
+  }
+
+  delay(100); // delay for 100 milliseconds
+}
